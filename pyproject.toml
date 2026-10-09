@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onenote-hierarchy"
+version = "0.3.0"
+description = "Export OneNote notebook titles and nesting on macOS and Windows"
+requires-python = ">=3.11"
+dependencies = []
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+desktop = ["pywin32>=308; sys_platform == 'win32'"]
+graph = ["requests>=2.32,<3", "msal>=1.31,<2", "msal-extensions>=1.2,<2"]
+dev = ["black>=25,<27", "pylint>=3.3,<5", "pytest>=8,<10", "pytest-cov>=7,<8"]
+
+[project.scripts]
+onenote-hierarchy = "onenote_hierarchy.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["onenote_hierarchy*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pylint.design]
+max-args = 7
+max-positional-arguments = 7
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=onenote_hierarchy --cov-branch --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+source = ["onenote_hierarchy"]
+branch = true
+patch = ["subprocess"]
+
+[tool.coverage.report]
+fail_under = 80
+precision = 2
+show_missing = true
