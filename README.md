@@ -10,72 +10,187 @@ or browse [the repository](https://github.com/jrmistry/refactor-onenote).
 
 ## Windows workplace setup
 
-Python 3.11+ and `pywin32` must be approved by your employer. Install in a local
-virtual environment; Git, Black, Pylint, MSAL, and a Graph app registration are not
-required to run Windows exports. On GitHub, select **Code → Download ZIP**. Extract `refactor-onenote-main.zip` into a
-user-writable, employer-approved folder, then open PowerShell in the extracted
-`refactor-onenote-main` folder (the one containing `pyproject.toml`). Open and sync the
-desired notebooks in desktop OneNote for Microsoft 365 before exporting.
+Follow these steps once to set up the exporter. After that, use **Run it again
+later** below whenever you need an updated hierarchy.
 
-Run with ordinary user permissions:
+### 1. Check what you need
+
+- A Windows laptop with **Microsoft 365 desktop OneNote** installed.
+- **Python 3.11 or newer** and permission to install the `pywin32` package.
+- A folder where you are allowed to save the project and its reports.
+
+On a work laptop, use your employer's approved software installation process.
+If Python or desktop OneNote is missing, ask IT to install it. The
+[official Python Windows guide](https://docs.python.org/3/using/windows.html)
+explains Python installation and its Windows commands.
+
+You do not need Git or a GitHub account. This Windows workflow uses your existing
+OneNote session; no MCP connection, cloud app registration, or additional sign-in
+is required.
+
+### 2. Download and extract the project
+
+1. Open [the GitHub repository](https://github.com/jrmistry/refactor-onenote).
+2. Click the green **Code** button, then **Download ZIP**.
+3. In File Explorer, right-click `refactor-onenote-main.zip` and select **Extract All**.
+4. Choose a user-writable, employer-approved folder and click **Extract**.
+5. Open the extracted folders until you can see **`pyproject.toml`** and **`README.md`**.
+   This is the project folder. Run the commands below from here, not inside the ZIP.
+
+### 3. Open PowerShell and check Python
+
+In File Explorer, while looking at the project folder, click the address bar at
+the top, type `powershell`, and press **Enter**. A PowerShell window opens in
+that folder. Use an ordinary window, not **Run as administrator**.
+
+**Paste each command on its own, press Enter, and wait for it to finish before
+running the next one.** Copy only the command text inside the boxes.
+
+```powershell
+python --version
+```
+
+You should see a version such as `Python 3.13.x`. It must be **3.11 or newer**.
+If `python` is not recognized or opens the Microsoft Store instead, try:
+
+```powershell
+py -3 --version
+```
+
+If neither command shows a suitable installed version, stop and ask IT for help.
+
+### 4. Create the virtual environment and install the exporter
+
+A virtual environment is a `.venv` folder that keeps this project's Python
+packages separate from other programs.
 
 ```powershell
 python -m venv .venv
+```
+
+If only `py -3` worked in step 3, use this command **instead**:
+
+```powershell
+py -3 -m venv .venv
+```
+
+Creating `.venv` may finish without printing anything. Then install:
+
+```powershell
 .\.venv\Scripts\python.exe -m pip install ".[desktop]"
-.\.venv\Scripts\python.exe -m onenote_hierarchy --help
+```
+
+Wait for installation to finish successfully. All remaining commands use the
+Python inside `.venv`, so you do not need to activate it, change PowerShell
+execution policies, run `pywin32_postinstall`, or use an administrator shell.
+
+### 5. Open your notebooks and check the connection
+
+Open the **desktop OneNote app**. Open every notebook you want to export and let
+OneNote finish syncing. Keep it open while running these commands:
+
+```powershell
 .\.venv\Scripts\python.exe -m onenote_hierarchy --backend desktop doctor
+```
+
+For example, with two notebooks open, a working connection reports:
+
+```text
+PASS: Windows, pywin32, and OneNote COM connection.
+PASS: inventory readable (2 notebook(s) open).
+Next: run list, then export. No notes were edited.
+```
+
+Your notebook count may differ. If it says no notebooks are open, open them in
+OneNote and run `doctor` again. If you see an error, use the troubleshooting table
+below before continuing. `doctor` checks the connection and notebook inventory;
+the export checks whether individual sections can be read.
+
+List the notebooks the exporter can see:
+
+```powershell
 .\.venv\Scripts\python.exe -m onenote_hierarchy --backend desktop list
+```
+
+Check that your intended notebook names appear.
+
+### 6. Export all open notebooks
+
+```powershell
 .\.venv\Scripts\python.exe -m onenote_hierarchy --backend desktop export --output hierarchy.txt --planning-csv planning.csv
+```
+
+Immediately after the export, check its exit code:
+
+```powershell
 $LASTEXITCODE
 ```
 
-`doctor` checks the platform, dependency loading, COM connection, and notebook
-inventory without creating or modifying notes. It reports success only after
-OneNote returns its inventory. No open notebooks produces a warning and exit `0`;
-a connection/read failure exits `1`. It does not establish that every section is
-readable; the export itself checks that and returns `2` for incomplete coverage.
-If `doctor` fails, follow its message before running the export.
+| Code | What it means |
+|---:|---|
+| `0` | The export completed. Review the files against OneNote. |
+| `1` | The command failed. Read the error; any existing output may be from an older run. |
+| `2` | An incomplete report was saved. Read its warnings before using it for planning. |
 
-The export above includes all notebooks open in desktop OneNote. To select only
-two, use the exact names from `list`:
+The export reads titles and nesting; it does not change your notes or fetch page
+bodies or attachments. The exporter does not upload reports or invoke AI. The
+installed OneNote app may sync through its normal configuration.
+
+### 7. Find and use your results
+
+Return to the project folder in File Explorer. You will find:
+
+| File | How to use it |
+|---|---|
+| `hierarchy.txt` | Open with Notepad to see notebook, group, section, page and subpage titles. |
+| `planning.csv` | Open with Excel or your approved spreadsheet app to fill in proposed paths, actions and reasons. |
+
+Compare some sections and subpage indentation with OneNote before planning a
+consolidation. Keep company reports on your work laptop and use only approved
+workplace tools: titles can contain confidential information.
+
+Use [COPILOT_PROMPT.md](COPILOT_PROMPT.md) with your approved workplace Copilot.
+It asks for a proposed combined structure and a mapping for each item, flags
+uncertainty, and avoids claiming duplicate content from titles alone. Carry out
+the plan with OneNote's built-in **Copy** controls, sync and verify content,
+nesting, sharing and internal links before retiring any originals.
+
+### Run it again later
+
+Open PowerShell in the **same project folder**, open/sync your notebooks, and
+repeat the export command in step 6 followed by `$LASTEXITCODE`. You do not need
+to recreate `.venv` or reinstall. A successful export replaces the same output
+files; copy or rename them first if you want to keep the previous report or any
+planning edits you made in the CSV. Close the files in Excel/other apps before
+exporting again.
+
+### Optional: export only selected notebooks
+
+Use the exact names shown by `list`. Replace `Notebook A` and `Notebook B` with
+your names, keeping the quotation marks. To export just one, omit the second
+`--notebook` argument.
 
 ```powershell
 .\.venv\Scripts\python.exe -m onenote_hierarchy --backend desktop export --notebook "Notebook A" --notebook "Notebook B" --output hierarchy.txt --planning-csv planning.csv
 $LASTEXITCODE
 ```
 
-Using the venv Python directly avoids changing PowerShell execution policies. Do
-not run an administrator shell, registry commands, or `pywin32_postinstall` for
-this workflow. The pywin32 project instructs users not to run its post-install
-script inside virtual environments. No additional sign-in is needed beyond the
-existing desktop OneNote session.
-The desktop backend uses OneNote's COM API, not a separate cloud sign-in, and
-works with notebooks the installed app can read. The discontinued Windows 10
-Store app is not the COM automation target. The exporter does not upload data or
-invoke AI; the installed OneNote app may sync through its normal configuration.
+### Troubleshooting
 
-| Diagnostic | Action |
+| What you see | What to do |
 |---|---|
-| Requires Windows | Run on the Windows laptop; Mac cannot use Windows COM. |
-| pywin32 could not be loaded | Run the pip command above with the same `.venv` Python. |
-| Desktop OneNote unavailable to COM | Open Microsoft 365 desktop OneNote; ask IT to check the installation if it remains unavailable. |
-| Access denied | Use the same ordinary user session as OneNote; an IT policy restriction cannot be bypassed by this exporter. |
-| Automation cache not writable | Extract to a permitted user-writable folder and create `.venv` there. |
-| Other COM failure | Open/sync OneNote and retry; give IT the reported HRESULT if it persists. |
+| `python` is not recognized / opens the Store | Try `py -3 --version`; otherwise ask IT to install approved Python 3.11+. |
+| `.venv\Scripts\python.exe` is not found | Check that you are in the folder containing `pyproject.toml`, then complete step 4. |
+| pip cannot find `pyproject.toml` / the project | Fully extract the ZIP and open PowerShell in the project folder from step 2. |
+| Package download is blocked / pywin32 could not be loaded | Ask IT about its approved package source; retry the step 4 pip command once installation is permitted. |
+| Desktop OneNote unavailable to COM | Open Microsoft 365 desktop OneNote, not the browser or old Windows 10 Store app; ask IT to check its installation if needed. |
+| Access denied / automation cache not writable | Use your ordinary OneNote user session and an approved writable folder; ask IT if the restriction persists. |
+| No notebooks returned / a notebook is missing | Open and sync it in desktop OneNote, then rerun `doctor` and `list`. |
+| Several notebooks match | Use `--notebook-id "ID from list"` instead of the name; repeat for multiple notebooks. |
+| Output file cannot be written | Close it in Excel/other apps and check that the project folder is writable. |
 
-Errors describe the operation and HRESULT without copying raw COM descriptions,
-which can contain private notebook information. Company reports remain on the
-work laptop; no upload to Codex is part of validation.
-
-Review the local text and CSV, then use [COPILOT_PROMPT.md](COPILOT_PROMPT.md)
-with your approved workplace Copilot. Titles may contain confidential information;
-keep company data in approved workplace locations. The prompt asks for a proposed
-structure and an item-by-item mapping, flags uncertainty, and avoids deduplicating
-pages based on names. Copy using OneNote's built-in controls, sync, verify content
-and nesting, and retain originals until validation. Re-export the destination for
-comparison; changing group/section organization can change counts without losing
-pages, so check the mapping as well as the totals. Sharing and internal links also
-need human review.
+If another connection error persists after syncing, give IT the error and any
+reported HRESULT code. This exporter cannot bypass workplace automation policies.
 
 ## macOS / Graph setup
 
