@@ -183,6 +183,7 @@ $LASTEXITCODE
 | `.venv\Scripts\python.exe` is not found | Check that you are in the folder containing `pyproject.toml`, then complete step 4. |
 | pip cannot find `pyproject.toml` / the project | Fully extract the ZIP and open PowerShell in the project folder from step 2. |
 | Package download is blocked / pywin32 could not be loaded | Ask IT about its approved package source; retry the step 4 pip command once installation is permitted. |
+| Connection failed with `TypeError` / `AttributeError` | Python's COM wrapper setup may have failed; use the diagnostic types and codes to investigate before changing OneNote or clearing caches. |
 | Desktop OneNote unavailable to COM | Open Microsoft 365 desktop OneNote, not the browser or old Windows 10 Store app; ask IT to check its installation if needed. |
 | Access denied / automation cache not writable | Use your ordinary OneNote user session and an approved writable folder; ask IT if the restriction persists. |
 | No notebooks returned / a notebook is missing | Open and sync it in desktop OneNote, then rerun `doctor` and `list`. |
@@ -191,6 +192,19 @@ $LASTEXITCODE
 
 If another connection error persists after syncing, give IT the error and any
 reported HRESULT code. This exporter cannot bypass workplace automation policies.
+
+#### If the connection error gives no useful details
+
+Version 0.3.1 and later report exception types and any available Windows HRESULT,
+including errors wrapped by pywin32. Raw exception descriptions and private paths
+are omitted. `no HRESULT available` means no Windows error code was available in
+the exception chain; it does not establish a workplace-policy restriction.
+
+If you downloaded an older ZIP, download the latest source again, extract it to
+a **new folder**, and repeat steps 3–5 there. Keep the old folder and its reports.
+This update improves diagnosis; it does not guarantee that OneNote can connect.
+Share only the new `Error:` diagnostic line with your support contact, rather
+than notebook titles, reports, or a screenshot containing company information.
 
 ## macOS / Graph setup
 

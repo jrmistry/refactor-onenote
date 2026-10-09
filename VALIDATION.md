@@ -36,6 +36,14 @@ warnings, and null page titles consistently use the existing untitled fallback.
 The CLI regression checks incomplete exit 2 while retaining unaffected notebooks.
 No critical findings or deferred minor findings were reported.
 
+## Desktop diagnostic patch (0.3.1)
+
+Three failing regressions reproduced lost exception types and wrapped Windows/
+cache failures before the fix. Diagnostics now preserve those types and HRESULTs
+without including raw exception descriptions. Errors without an HRESULT no
+longer ask users to supply a nonexistent code. The original connection method
+remains unchanged; these fixtures do not identify a particular laptop's failure.
+
 ## Live verification limits
 
 A successful fixture test proves controlled behavior, not access to a particular

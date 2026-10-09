@@ -151,6 +151,40 @@ def test_connection_errors_are_actionable_without_private_details(
     assert "private" not in message
 
 
+@pytest.mark.parametrize(
+    "inner,expected",
+    [
+        (ComFailure(-2147024891), "access denied"),
+        (PermissionError("private cache path"), "writable"),
+    ],
+)
+def test_doctor_preserves_wrapped_failure_without_private_payload(
+    inner, expected, monkeypatch, capsys
+):
+    """pywin32 wrapper failures must not hide an underlying Windows error."""
+    error = TypeError("private wrapper payload")
+    error.__context__ = inner
+    install_boundary(monkeypatch, connect_error=error)
+    assert cli.main(["doctor"]) == 1
+    output = capsys.readouterr()
+    assert "TypeError" in output.err
+    assert type(inner).__name__ in output.err
+    assert expected in output.err
+    if isinstance(inner, ComFailure):
+        assert "0x80070005" in output.err
+    assert "private" not in output.err
+    assert "PASS" not in output.out
+
+
+def test_non_com_failure_reports_type_without_promising_missing_hresult():
+    """An ordinary Python failure must be diagnosable without exposing its text."""
+    message = desktop.desktop_error(TypeError("private wrapper payload"), "connection")
+    assert "TypeError" in message
+    assert "no HRESULT available" in message
+    assert "HRESULT shown here" not in message
+    assert "private" not in message
+
+
 def test_inventory_error_in_list_has_actionable_message(monkeypatch):
     """The normal list command needs the same context as diagnostics."""
     install_boundary(monkeypatch, read_error=ComFailure(-2147024891))

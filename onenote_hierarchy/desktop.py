@@ -19,20 +19,34 @@ LABELS = {
 
 def desktop_error(exc: Exception, operation: str) -> str:
     """Explain Windows failures without echoing note text or raw COM payloads."""
-    code = getattr(exc, "hresult", None)
-    details = getattr(exc, "excepinfo", None)
-    if details and len(details) > 5 and details[5]:
-        code = details[5]
+    code = None
+    types = []
+    seen = set()
+    cache_denied = False
+    current = exc
+    # EnsureDispatch can wrap a COM error in TypeError; its context retains
+    # the original HRESULT. Keep diagnostic metadata, never exception text.
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        types.append(type(current).__name__)
+        cache_denied = cache_denied or isinstance(current, PermissionError)
+        current_code = getattr(current, "hresult", None)
+        details = getattr(current, "excepinfo", None)
+        if details and len(details) > 5 and details[5]:
+            current_code = details[5]
+        if code is None and isinstance(current_code, int):
+            code = current_code
+        current = current.__cause__ or current.__context__
     code = code & 0xFFFFFFFF if isinstance(code, int) else None
-    label = f" (HRESULT 0x{code:08X})" if code is not None else ""
-    prefix = f"OneNote desktop {operation} failed{label}: "
+    label = f"HRESULT 0x{code:08X}" if code is not None else "no HRESULT available"
+    prefix = f"OneNote desktop {operation} failed ({' -> '.join(types)}; {label}): "
     if code == 0x80070005:
         return prefix + (
             "access denied. Use the same ordinary Windows user session as OneNote. "
             "If workplace policy blocks automation, ask IT; the exporter cannot "
             "bypass that restriction."
         )
-    if isinstance(exc, PermissionError):
+    if cache_denied:
         return prefix + (
             "Python could not write its automation cache. Extract the project into "
             "a user-writable folder and create .venv there. If it remains blocked, "
@@ -46,7 +60,7 @@ def desktop_error(exc: Exception, operation: str) -> str:
         )
     return prefix + (
         "Open desktop OneNote in this Windows user session, let it finish syncing, "
-        "then retry. If it still fails, give IT the HRESULT shown here. "
+        "then retry. If it still fails, give IT the diagnostic types and codes above. "
         "No administrator or registry changes are part of this setup."
     )
 

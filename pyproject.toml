@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "onenote-hierarchy"
-version = "0.3.0"
+version = "0.3.1"
 description = "Export OneNote notebook titles and nesting on macOS and Windows"
 requires-python = ">=3.11"
 dependencies = []
